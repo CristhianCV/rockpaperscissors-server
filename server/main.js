@@ -1,7 +1,10 @@
 var express = require("express");
+var cors = require("cors");
 var app = express();
 var server = require("http").Server(app);
 var io = require("socket.io")(server);
+
+app.use(cors());
 
 var roomsInfo = new Map();
 const types = { ROCK: "rock", SCISSOR: "scissors", PAPER: "paper" };
