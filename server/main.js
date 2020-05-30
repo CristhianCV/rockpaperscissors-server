@@ -18,28 +18,31 @@ io.on("connection", function (socket) {
     const { id, name, score, typePicked, isWinner, room } = data;
 
     if (!roomsInfo.has(room)) {
-      roomsInfo.set(room, []);
+      roomsInfo.set(room, new Map());
     }
 
-    if (roomsInfo.get(room).length === 2) {
+    if (roomsInfo.get(room).size === 2) {
       socket.emit("joinRoomResponse", {
         code: "ERROR",
         message: "The number of players was excedded",
       });
+      showOnConsola("error");
     } else {
-      roomsInfo.get(room).push(data);
+      roomsInfo.get(room).set(id, data);
       socket.join(room);
 
       socket.emit("joinRoomResponse", {
         code: "OK",
         message: "Connected Succesfully",
       });
+      showOnConsola("connected" + id);
 
-      if (roomsInfo.get(room).length === 2) {
+      if (roomsInfo.get(room).size === 2) {
         io.sockets.to(room).emit("gameReady", {
           code: "OK",
           message: "The game is ready to start",
         });
+        showOnConsola("ready");
       }
     }
   });
@@ -47,55 +50,56 @@ io.on("connection", function (socket) {
   socket.on("circleSelected", function (data) {
     const { id, name, score, typePicked, isWinner, room } = data;
 
-    roomsInfo.get(room).forEach((player) => {
-      if (player.id === id) {
-        player.typePicked = typePicked;
-      }
-    });
+    roomsInfo.get(room).get(id).typePicked = typePicked;
 
-    let playerOneSelectedType = roomsInfo.get(room)[0].typePicked;
-    let playerTwoSelectedType = roomsInfo.get(room)[1].typePicked;
+    let idPlayers = Array.from(roomsInfo.get(room).keys());
+
+    let playerOneSelectedType = roomsInfo.get(room).get(idPlayers[0])
+      .typePicked;
+    let playerTwoSelectedType = roomsInfo.get(room).get(idPlayers[1])
+      .typePicked;
 
     if (
       playerOneSelectedType.trim() !== "" &&
       playerTwoSelectedType.trim() !== ""
     ) {
-      let winner = getWinner(playerOneSelectedType, playerTwoSelectedType);
-      if (winner) {
-        roomsInfo.get(room)[winner - 1].isWinner = true;
-        roomsInfo.get(room)[winner - 1].score += 1;
+      let winnerIndex = getWinner(playerOneSelectedType, playerTwoSelectedType);
+      showOnConsola("winnerIndex" + winnerIndex);
+      if (winnerIndex) {
+        roomsInfo.get(room).get(idPlayers[winnerIndex - 1]).isWinner = true;
+        roomsInfo.get(room).get(idPlayers[winnerIndex - 1]).score += 1;
       }
       io.sockets.to(room).emit("circleSelectedResponse", {
-        idWinner: winner ? roomsInfo.get(room)[winner - 1].id : 0,
-        players: roomsInfo.get(room),
+        idWinner: winnerIndex
+          ? roomsInfo.get(room).get(idPlayers[winnerIndex - 1]).id
+          : 0,
+        players: Array.from(roomsInfo.get(room).values()),
       });
+      showOnConsola(Array.from(roomsInfo.get(room).values()));
     }
   });
 
   socket.on("playAgain", function (data) {
     const { id, name, score, typePicked, isWinner, room } = data;
 
-    roomsInfo.get(room).forEach((player) => {
-      player.typePicked = "";
-      player.isWinner = false;
-    });
+    roomsInfo.get(room).get(id).typePicked = "";
+    roomsInfo.get(room).get(id).isWinner = false;
+
+    roomsInfo.get(roomsInfo.get(room).get(id));
+  });
+
+  socket.on("disconnect", function (data) {
+    showOnConsola("disconnect");
   });
 
   socket.on("exitGame", (data) => {
     const { id, name, score, typePicked, isWinner, room } = data;
 
-    let count = 0;
-    let index = 0;
-
-    if (roomsInfo.has(room) && roomsInfo.get(room).length > 0) {
-      roomsInfo.get(room).forEach((player) => {
-        if (player.id === id) {
-          index = count;
-        }
-        count++;
-      });
-      roomsInfo.get(room).splice(index, 1);
+    if (roomsInfo.has(room) && roomsInfo.get(room).size > 0) {
+      roomsInfo.get(room).delete(id);
     }
+
+    showOnConsola("exitGame" + id);
   });
 });
 
