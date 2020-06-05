@@ -4,7 +4,7 @@
   "description": "Server for the web game RockPaperScissors",
   "main": "index.js",
   "scripts": {
-    "start": "babel-node app.js --exec",
+    "start": "babel-node main.js --exec",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
