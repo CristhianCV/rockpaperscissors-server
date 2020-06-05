@@ -4,11 +4,7 @@
   "description": "Server for the web game RockPaperScissors",
   "main": "index.js",
   "scripts": {
-<<<<<<< HEAD
     "start": "babel-node ./server/main.js --exec",
-=======
-    "start": "nodemon server/main.js",
->>>>>>> 1e009260f4e8f7ce55a86f5cbf89b75d6879b7a1
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -25,7 +21,6 @@
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.17.1",
-<<<<<<< HEAD
     "socket.io": "^2.3.0",
     "@babel/cli": "^7.10.1",
     "@babel/core": "^7.10.2",
@@ -37,9 +32,5 @@
     "@babel/core": "^7.10.2",
     "@babel/node": "^7.10.1",
     "@babel/preset-env": "^7.10.2"
-=======
-    "nodemon": "^2.0.4",
-    "socket.io": "^2.3.0"
->>>>>>> 1e009260f4e8f7ce55a86f5cbf89b75d6879b7a1
   }
 }
