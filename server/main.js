@@ -1,29 +1,30 @@
-var express = require("express");
-var app = express();
-var server = require("http").Server(app);
-var io = require("socket.io")(server);
+var express = require('express')
+var app = express()
+var server = require('http').Server(app)
+var io = require('socket.io')(server)
 
-var roomsInfo = new Map();
+var roomsInfo = new Map()
 
-io.on("connection", function (socket) {
-  socket.on("join_room", (room) => {
+io.on('connection', function (socket) {
+  socket.on('join_room', (room) => {
     if (!roomsInfo.has(room)) {
-      roomsInfo.set(room, []);
+      roomsInfo.set(room, [])
     }
-    socket.join(room);
-  });
+    socket.join(room)
+  })
 
-  socket.on("circleSelected", function (data) {
-    const { id, name, score, typePicked, isWinner, room } = data;
-    roomsInfo.get(room).push(data);
-    io.sockets.to(room).emit("circleTypeSelected", roomsInfo.get(room));
-  });
+  socket.on('circleSelected', function (data) {
+    const { id, name, score, typePicked, isWinner, room } = data
+    roomsInfo.get(room).push(data)
+    io.sockets.to(room).emit('circleTypeSelected', roomsInfo.get(room))
+  })
 
-  socket.on("playAgain", function (room) {
-    roomsInfo.set(room, []);
-  });
-});
+  socket.on('playAgain', function (room) {
+    roomsInfo.set(room, [])
+  })
+})
+app.set('puerto', process.env.PORT || 3000)
 
-server.listen(8080, function () {
-  console.log("Servidor corriendo en http://localhost:8080");
-});
+server.listen(app.get('puerto'), function () {
+  console.log('Servidor corriendo en' + app.get('puerto'))
+})
