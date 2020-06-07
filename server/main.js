@@ -152,6 +152,12 @@ io.on("connection", function (socket) {
   });
 });
 
+app.get("/hello", function (req, res, next) {
+  res.send({
+    message: "Hello",
+  });
+});
+
 const getWinner = (playerOneSelectedType, playerTwoSelectedType) => {
   let playerWinner = 0;
   switch (playerOneSelectedType) {
