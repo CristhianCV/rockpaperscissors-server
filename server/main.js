@@ -28,10 +28,15 @@ io.on("connection", function (socket) {
     let roomId = getRandomId();
     let hostId = getRandomId();
 
-    roomsInfo.set(roomId, new Map());
-    roomsInfo
-      .get(roomId)
-      .set(hostId, { id: hostId, name: hostName, typePicked: "", score: 0 });
+    const hostMapInfo = new Map();
+    hostMapInfo.set(hostId, {
+      id: hostId,
+      name: hostName,
+      typePicked: "",
+      score: 0,
+    });
+    roomsInfo.set(roomId, hostMapInfo);
+
     socket.join(roomId);
 
     socket.emit(GAME_EVENTS.ROOM_CREATED, {
@@ -57,71 +62,71 @@ io.on("connection", function (socket) {
   });
 
   socket.on(GAME_EVENTS.JOIN_ROOM, (data) => {
-    const { id, name, score, typePicked, isWinner, room } = data;
+    showOnConsola("join room");
+    const { name, roomId } = data;
 
-    if (!roomsInfo.has(room)) {
-      roomsInfo.set(room, new Map());
-    }
+    let gestId = getRandomId();
 
-    if (roomsInfo.get(room).size === 2) {
-      socket.emit("joinRoomResponse", {
-        code: "ERROR",
-        message: "The number of players was excedded",
+    roomsInfo
+      .get(roomId)
+      .set(gestId, { id: gestId, name, typePicked: "", score: 0 });
+    socket.join(roomId);
+
+    if (roomsInfo.get(roomId).size === 2) {
+      io.sockets.to(roomId).emit(GAME_EVENTS.GAME_IS_READY, {
+        error: "",
+        data: {
+          host: {
+            name: roomsInfo.get(roomId).values().next().value.name,
+            id: roomsInfo.get(roomId).values().next().value.id,
+          },
+          opponent: {
+            name,
+            id: gestId,
+          },
+        },
       });
-      showOnConsola("error");
-    } else {
-      roomsInfo.get(room).set(id, data);
-      socket.join(room);
-
-      socket.emit("joinRoomResponse", {
-        code: "OK",
-        message: "Connected Succesfully",
-      });
-      showOnConsola("connected" + id);
-
-      if (roomsInfo.get(room).size === 2) {
-        io.sockets.to(room).emit(GAME_EVENTS.GAME_IS_READY, {
-          code: "OK",
-          message: "The game is ready to start",
-        });
-        showOnConsola("ready");
-      }
+      showOnConsola("ready");
     }
   });
 
   socket.on(GAME_EVENTS.USER_PICKED, function (data) {
-    const { id, name, score, typePicked, isWinner, room } = data;
+    try {
+      const { id, typePicked, room } = data;
+      roomsInfo.get(room).get(id).typePicked = typePicked;
 
-    roomsInfo.get(room).get(id).typePicked = typePicked;
+      let idPlayers = Array.from(roomsInfo.get(room).keys());
+      const host = roomsInfo.get(room).get(idPlayers[0]);
+      const opponent = roomsInfo.get(room).get(idPlayers[1]);
 
-    let idPlayers = Array.from(roomsInfo.get(room).keys());
+      showOnConsola("picked", roomsInfo.get(room));
 
-    let playerOneSelectedType = roomsInfo.get(room).get(idPlayers[0])
-      .typePicked;
-    let playerTwoSelectedType = roomsInfo.get(room).get(idPlayers[1])
-      .typePicked;
+      const hostTypePicked = host.typePicked;
+      const opponentTypePicked = opponent.typePicked;
 
-    if (
-      playerOneSelectedType.trim() !== "" &&
-      playerTwoSelectedType.trim() !== ""
-    ) {
-      let winnerIndex = getWinner(playerOneSelectedType, playerTwoSelectedType);
-      showOnConsola("winnerIndex" + winnerIndex);
-      if (winnerIndex) {
-        roomsInfo.get(room).get(idPlayers[winnerIndex - 1]).score += 1;
+      if (hostTypePicked !== "" && opponentTypePicked !== "") {
+        let winnerIndex = getWinner(hostTypePicked, opponentTypePicked);
+        showOnConsola("winnerIndex" + winnerIndex);
+
+        io.sockets.to(room).emit(GAME_EVENTS.GAME_RESULT, {
+          error: "",
+          data: {
+            isWinner: winnerIndex,
+            host,
+            opponent,
+          },
+        });
       }
+    } catch (error) {
       io.sockets.to(room).emit(GAME_EVENTS.GAME_RESULT, {
-        idWinner: winnerIndex
-          ? roomsInfo.get(room).get(idPlayers[winnerIndex - 1]).id
-          : 0,
-        players: Array.from(roomsInfo.get(room).values()),
+        error: error.message,
+        data: null,
       });
-      showOnConsola(Array.from(roomsInfo.get(room).values()));
     }
   });
 
   socket.on(GAME_EVENTS.PLAY_AGAIN_REQUEST, function (data) {
-    const { id, name, score, typePicked, isWinner, room } = data;
+    const { id, room } = data;
 
     roomsInfo.get(room).get(id).typePicked = "";
 
@@ -142,7 +147,7 @@ io.on("connection", function (socket) {
   });
 
   socket.on(GAME_EVENTS.EXIT_GAME, (data) => {
-    const { id, name, score, typePicked, isWinner, room } = data;
+    const { id, room } = data;
 
     if (roomsInfo.has(room) && roomsInfo.get(room).has(id)) {
       roomsInfo.get(room).delete(id);
