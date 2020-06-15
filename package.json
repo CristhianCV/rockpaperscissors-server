@@ -32,5 +32,9 @@
     "@babel/core": "^7.10.2",
     "@babel/node": "^7.10.1",
     "@babel/preset-env": "^7.10.2"
+  },
+  "engines": {
+    "node": "12.16.x",
+    "npm": "6.9.x"
   }
 }

@@ -234,7 +234,7 @@ function getRandomId() {
   return Math.random().toString(36).substr(2, 9);
 }
 
-function emitError(socket, message = "") {
+function emitError(socket, event, message = "") {
   socket.emit(event, {
     error: message,
     data: null,
