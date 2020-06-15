@@ -21,6 +21,7 @@ const GAME_EVENTS = {
   PLAY_AGAIN_REQUEST: "PLAY_AGAIN_REQUEST",
   PLAY_AGAIN: "PLAY_AGAIN",
   EXIT_GAME: "EXIT_GAME",
+  KICK_PLAYER: "KICK_PLAYER",
 };
 
 io.on("connection", function (socket) {
@@ -43,7 +44,7 @@ io.on("connection", function (socket) {
       error: "",
       data: { roomId: roomId, hostId: hostId },
     });
-    console.log("create room " + roomId);
+    // showOnConsola(GAME_EVENTS.ROOM_CREATED + ": " + roomId);
   });
 
   socket.on(GAME_EVENTS.VERIFY_ROOM_AVAILABILITY, (room) => {
@@ -58,11 +59,11 @@ io.on("connection", function (socket) {
         data: null,
       });
     }
-    console.log("verify room");
+    // console.log(GAME_EVENTS.VERIFY_ROOM_AVAILABILITY);
   });
 
   socket.on(GAME_EVENTS.JOIN_ROOM, (data) => {
-    showOnConsola("join room");
+    // showOnConsola(GAME_EVENTS.JOIN_ROOM);
     const { name, roomId } = data;
 
     let gestId = getRandomId();
@@ -86,7 +87,7 @@ io.on("connection", function (socket) {
           },
         },
       });
-      showOnConsola("ready");
+      // showOnConsola("ready");
     }
   });
 
@@ -99,14 +100,14 @@ io.on("connection", function (socket) {
       const host = roomsInfo.get(room).get(idPlayers[0]);
       const opponent = roomsInfo.get(room).get(idPlayers[1]);
 
-      showOnConsola("picked", roomsInfo.get(room));
+      // showOnConsola("picked", roomsInfo.get(room));
 
       const hostTypePicked = host.typePicked;
       const opponentTypePicked = opponent.typePicked;
 
       if (hostTypePicked !== "" && opponentTypePicked !== "") {
         let winnerIndex = getWinner(hostTypePicked, opponentTypePicked);
-        showOnConsola("winnerIndex" + winnerIndex);
+        // showOnConsola("winnerIndex" + winnerIndex);
 
         io.sockets.to(room).emit(GAME_EVENTS.GAME_RESULT, {
           error: "",
@@ -126,34 +127,41 @@ io.on("connection", function (socket) {
   });
 
   socket.on(GAME_EVENTS.PLAY_AGAIN_REQUEST, function (data) {
-    const { id, room } = data;
+    const { room, id } = data;
 
     roomsInfo.get(room).get(id).typePicked = "";
 
     let idPlayers = Array.from(roomsInfo.get(room).keys());
+    const host = roomsInfo.get(room).get(idPlayers[0]);
+    const opponent = roomsInfo.get(room).get(idPlayers[1]);
+
+    // showOnConsola(GAME_EVENTS.PLAY_AGAIN_REQUEST);
 
     if (
       roomsInfo.get(room).size === 2 &&
-      roomsInfo.get(room).get(idPlayers[0]).typePicked.trim() !== "" &&
-      roomsInfo.get(room).get(idPlayers[1]).typePicked.trim() !== ""
+      host.typePicked.trim() === "" &&
+      opponent.typePicked.trim() === ""
     ) {
-      io.sockets.to(room).emit(GAME_EVENTS.PLAY_AGAIN);
-      showOnConsola("reload");
+      io.sockets.to(room).emit(GAME_EVENTS.PLAY_AGAIN, {
+        error: "",
+        data: null,
+      });
+      // showOnConsola(GAME_EVENTS.PLAY_AGAIN);
     }
   });
 
   socket.on("disconnect", function (data) {
-    showOnConsola("disconnect");
+    // showOnConsola("disconnect");
   });
 
   socket.on(GAME_EVENTS.EXIT_GAME, (data) => {
-    const { id, room } = data;
-
-    if (roomsInfo.has(room) && roomsInfo.get(room).has(id)) {
-      roomsInfo.get(room).delete(id);
-    }
-
-    showOnConsola(GAME_EVENTS.EXIT_GAME + id);
+    const { room } = data;
+    roomsInfo.set(room, new Map());
+    io.sockets.to(room).emit(GAME_EVENTS.KICK_PLAYER, {
+      error: "",
+      data: null,
+    });
+    // showOnConsola(GAME_EVENTS.EXIT_GAME);
   });
 });
 
